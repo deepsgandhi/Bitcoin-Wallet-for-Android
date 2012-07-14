@@ -17,10 +17,16 @@
 
 package de.schildbach.wallet.ui;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
+import java.util.UUID;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -29,6 +35,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -46,6 +53,7 @@ import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.view.ActionMode;
@@ -77,6 +85,7 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 	private AbstractWalletActivity activity;
 	private WalletApplication application;
 	private ContentResolver contentResolver;
+	private BluetoothAdapter bluetoothAdapter;
 	private Wallet wallet;
 
 	private BlockchainService service;
@@ -101,6 +110,9 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 	private Address validatedAddress;
 	private String receivingLabel;
 	private boolean isValidAmounts;
+
+	private String btMac;
+	private UUID btUuid;
 
 	private State state = State.INPUT;
 	private Transaction sentTransaction;
@@ -233,6 +245,8 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 			isValidAmounts = savedInstanceState.getBoolean("is_valid_amounts");
 			sentTransaction = (Transaction) savedInstanceState.getSerializable("sent_transaction");
 		}
+
+		bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
 		activity.bindService(new Intent(activity, BlockchainServiceImpl.class), serviceConnection, Context.BIND_AUTO_CREATE);
 	}
@@ -610,6 +624,8 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 
 			sentTransaction.getConfidence().addEventListener(sentTransactionConfidenceListener);
 
+			handleSendBluetooth(sentTransaction);
+
 			// final String label = AddressBookProvider.resolveLabel(contentResolver, validatedAddress.toString());
 			// if (label == null)
 			// showAddAddressDialog(validatedAddress.toString(), receivingLabel);
@@ -617,6 +633,31 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 		else
 		{
 			activity.longToast(R.string.send_coins_error_msg);
+		}
+	}
+
+	// @TargetApi(10)
+	private void handleSendBluetooth(final Transaction tx)
+	{
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1 && bluetoothAdapter != null && btMac != null && btUuid != null)
+		{
+			try
+			{
+				final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(btMac);
+				final BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(btUuid);
+
+				socket.connect();
+				final OutputStream os = socket.getOutputStream();
+				os.write(tx.unsafeBitcoinSerialize());
+				os.close();
+
+				Toast.makeText(activity, "tx sent via bluetooth", Toast.LENGTH_LONG).show();
+			}
+			catch (final IOException x)
+			{
+				x.printStackTrace();
+				Toast.makeText(activity, "error sending tx via bluetooth: " + x.getMessage(), Toast.LENGTH_LONG).show();
+			}
 		}
 	}
 
@@ -712,7 +753,7 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 		return state == State.INPUT && validatedAddress != null && isValidAmounts;
 	}
 
-	public void update(final String receivingAddress, final String receivingLabel, final BigInteger amount)
+	public void update(final String receivingAddress, final String receivingLabel, final BigInteger amount, final String btMac, final UUID btUuid)
 	{
 		try
 		{
@@ -733,6 +774,9 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 			amountView.requestFocus();
 		else if (receivingAddress != null && amount != null)
 			feeView.requestFocus();
+
+		this.btMac = btMac;
+		this.btUuid = btUuid;
 
 		updateView();
 

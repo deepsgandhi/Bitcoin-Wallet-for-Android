@@ -18,6 +18,7 @@
 package de.schildbach.wallet.ui;
 
 import java.math.BigInteger;
+import java.util.UUID;
 
 import android.app.Dialog;
 import android.content.Intent;
@@ -94,7 +95,7 @@ public final class SendCoinsActivity extends AbstractWalletActivity
 			final String contents = intent.getStringExtra("SCAN_RESULT");
 			if (contents.matches("[a-zA-Z0-9]*"))
 			{
-				updateSendCoinsFragment(contents, null, null);
+				updateSendCoinsFragment(contents, null, null, null, null);
 			}
 			else
 			{
@@ -103,7 +104,7 @@ public final class SendCoinsActivity extends AbstractWalletActivity
 					final BitcoinURI bitcoinUri = new BitcoinURI(null, contents);
 					final Address address = bitcoinUri.getAddress();
 					final String addressLabel = bitcoinUri.getLabel();
-					updateSendCoinsFragment(address != null ? address.toString() : null, addressLabel, bitcoinUri.getAmount());
+					updateSendCoinsFragment(address != null ? address.toString() : null, addressLabel, bitcoinUri.getAmount(), null, null);
 				}
 				catch (final BitcoinURIParseException x)
 				{
@@ -160,6 +161,8 @@ public final class SendCoinsActivity extends AbstractWalletActivity
 		final String address;
 		final String addressLabel;
 		final BigInteger amount;
+		final String btMac;
+		final UUID btUuid;
 
 		if ((Intent.ACTION_VIEW.equals(action) || NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) && intentUri != null && "bitcoin".equals(scheme))
 		{
@@ -169,6 +172,8 @@ public final class SendCoinsActivity extends AbstractWalletActivity
 				address = bitcoinUri.getAddress().toString();
 				addressLabel = bitcoinUri.getLabel();
 				amount = bitcoinUri.getAmount();
+				btMac = (String) bitcoinUri.getParameterByName("btmac");
+				btUuid = UUID.fromString((String) bitcoinUri.getParameterByName("btuuid"));
 			}
 			catch (final BitcoinURIParseException x)
 			{
@@ -181,6 +186,8 @@ public final class SendCoinsActivity extends AbstractWalletActivity
 			address = intent.getStringExtra(INTENT_EXTRA_ADDRESS);
 			addressLabel = intent.getStringExtra(INTENT_EXTRA_ADDRESS_LABEL);
 			amount = null;
+			btMac = null;
+			btUuid = null;
 		}
 		else
 		{
@@ -188,15 +195,16 @@ public final class SendCoinsActivity extends AbstractWalletActivity
 		}
 
 		if (address != null || amount != null)
-			updateSendCoinsFragment(address, addressLabel, amount);
+			updateSendCoinsFragment(address, addressLabel, amount, btMac, btUuid);
 		else
 			longToast(R.string.send_coins_parse_address_error_msg);
 	}
 
-	private void updateSendCoinsFragment(final String receivingAddress, final String receivingLabel, final BigInteger amount)
+	private void updateSendCoinsFragment(final String receivingAddress, final String receivingLabel, final BigInteger amount, final String btMac,
+			final UUID btUuid)
 	{
 		final SendCoinsFragment sendCoinsFragment = (SendCoinsFragment) getSupportFragmentManager().findFragmentById(R.id.send_coins_fragment);
 
-		sendCoinsFragment.update(receivingAddress, receivingLabel, amount);
+		sendCoinsFragment.update(receivingAddress, receivingLabel, amount, btMac, btUuid);
 	}
 }
