@@ -17,6 +17,7 @@
 
 package de.schildbach.wallet.ui;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -646,9 +647,13 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 				final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(btMac);
 				final BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(btUuid);
 
+				final byte[] serializedTx = tx.unsafeBitcoinSerialize();
+
 				socket.connect();
-				final OutputStream os = socket.getOutputStream();
-				os.write(tx.unsafeBitcoinSerialize());
+				final DataOutputStream os = new DataOutputStream(socket.getOutputStream());
+				os.writeInt(1);
+				os.writeInt(serializedTx.length);
+				os.write(serializedTx);
 				os.close();
 
 				Toast.makeText(activity, "tx sent via bluetooth", Toast.LENGTH_LONG).show();
