@@ -655,6 +655,7 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 				os.writeInt(serializedTx.length);
 				os.write(serializedTx);
 				os.close();
+				socket.close();
 
 				Toast.makeText(activity, "tx sent via bluetooth", Toast.LENGTH_LONG).show();
 			}
