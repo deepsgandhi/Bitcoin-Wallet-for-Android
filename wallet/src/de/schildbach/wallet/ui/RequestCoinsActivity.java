@@ -56,18 +56,24 @@ public final class RequestCoinsActivity extends AbstractWalletActivity {
 		final ActionBar actionBar = getSupportActionBar();
 		actionBar.setTitle(R.string.request_coins_activity_title);
 		actionBar.setDisplayHomeAsUpEnabled(true);
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1) {
-			handleBluetooth();
-		}
 	}
 
 	@Override
-	protected void onDestroy() {
+	protected void onResume()
+	{
+		super.onResume();
 
-		if (acceptThread != null) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1)
+			handleBluetooth();
+	}
+
+	@Override
+	protected void onPause()
+	{
+		if (acceptThread != null)
 			acceptThread.stopAccepting();
-		}
-		super.onDestroy();
+
+		super.onPause();
 	}
 
 	// @TargetApi(10)
