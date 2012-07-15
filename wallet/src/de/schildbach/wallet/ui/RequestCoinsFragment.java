@@ -38,6 +38,7 @@ import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.view.Menu;
@@ -75,6 +76,8 @@ public final class RequestCoinsFragment extends SherlockFragment implements Amou
 	private CheckBox includeLabelView;
 	private View nfcEnabledView;
 
+	private String btMac;
+	
 	@Override
 	public void onAttach(final Activity activity)
 	{
@@ -234,7 +237,8 @@ public final class RequestCoinsFragment extends SherlockFragment implements Amou
 
 	private void updateView()
 	{
-		final String request = determineRequestStr();
+		
+		final String request = determineRequestStr()+(btMac != null ? "&btmac=" + btMac : "");
 
 		// update qr code
 		final int size = (int) (256 * getResources().getDisplayMetrics().density);
@@ -272,5 +276,13 @@ public final class RequestCoinsFragment extends SherlockFragment implements Amou
 	public void useCalculatedAmount(final BigInteger amount)
 	{
 		amountView.setAmount(amount);
+	}
+
+	public void update(String btMac) {
+		System.out.println("updating mac:"+btMac);
+		Toast.makeText(activity, "updating mac",
+				Toast.LENGTH_LONG).show();
+		this.btMac=btMac;
+		updateView();
 	}
 }

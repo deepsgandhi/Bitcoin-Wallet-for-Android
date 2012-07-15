@@ -17,27 +17,38 @@
 
 package de.schildbach.wallet.ui;
 
+import java.io.IOException;
+import java.util.UUID;
+
 import android.app.Dialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothServerSocket;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Window;
 import android.webkit.WebView;
+import android.widget.Toast;
 
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
+import com.google.bitcoin.core.ProtocolException;
+import com.google.bitcoin.core.Transaction;
+import com.google.bitcoin.core.Wallet;
 
+import de.schildbach.wallet.Constants;
 import de.schildbach.wallet_test.R;
 
 /**
  * @author Andreas Schildbach
  */
-public final class RequestCoinsActivity extends AbstractWalletActivity
-{
+public final class RequestCoinsActivity extends AbstractWalletActivity {
 	private static final int DIALOG_HELP = 0;
+	private BluetoothAdapter bluetoothAdapter;
+	private BluetoothAcceptThread acceptThread;
 
 	@Override
-	protected void onCreate(final Bundle savedInstanceState)
-	{
+	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.request_coins_content);
@@ -45,8 +56,76 @@ public final class RequestCoinsActivity extends AbstractWalletActivity
 		final ActionBar actionBar = getSupportActionBar();
 		actionBar.setTitle(R.string.request_coins_activity_title);
 		actionBar.setDisplayHomeAsUpEnabled(true);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1) {
+			handleBluetooth();
+		}
 	}
 
+	@Override
+	protected void onDestroy() {
+
+		if (acceptThread != null) {
+			acceptThread.stopAccepting();
+		}
+		super.onDestroy();
+	}
+
+	// @TargetApi(10)
+	private void handleBluetooth() {
+
+		// For receiving a payment via Bluetooth
+		bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		if (bluetoothAdapter == null) {
+			Toast.makeText(this, "No Bluetooth is available", Toast.LENGTH_LONG)
+					.show();
+			System.out.println("no bluetooth is available");
+		} else {
+			System.out.println("bluetooth is available");
+			if (bluetoothAdapter.isEnabled()) {
+				System.out.println("bluetooth is enabled");
+				RequestCoinsFragment fragment = (RequestCoinsFragment) getSupportFragmentManager()
+						.findFragmentById(R.id.request_coins_fragment);
+				fragment.update(bluetoothAdapter.getAddress());
+				
+				BluetoothServerSocket listeningSocket = null;
+				try {
+					listeningSocket = bluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(
+									"Bitcoin Transaction Submission", Constants.BLUETOOTH_UUID);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				
+				acceptThread = new BluetoothAcceptThread(
+						listeningSocket) {
+					@Override
+					public void handleTx(final byte[] msg) {
+						runOnUiThread(new Runnable() {
+
+							public void run() {
+								// FIXME: implement
+								System.out.println("BTTX bluetooth message arrived");
+								try {
+									Transaction tx = new Transaction(Constants.NETWORK_PARAMETERS, msg);
+									System.out.println("BTTX "+tx);
+									getWalletApplication().getWallet().receivePending(tx);
+								} catch (Exception e){
+									e.printStackTrace();	
+								}
+							}
+						});
+					}
+
+				};
+				acceptThread.start();
+			} else {
+				Toast.makeText(this, "Please enable Bluetooth",
+						Toast.LENGTH_LONG).show();
+			}
+		}
+	}
+	
+
+	
 	@Override
 	public boolean onCreateOptionsMenu(final Menu menu)
 	{
