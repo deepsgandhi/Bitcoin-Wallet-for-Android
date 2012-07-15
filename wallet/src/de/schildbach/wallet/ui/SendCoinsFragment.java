@@ -19,9 +19,7 @@ package de.schildbach.wallet.ui;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.math.BigInteger;
-import java.util.UUID;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -113,7 +111,6 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 	private boolean isValidAmounts;
 
 	private String btMac;
-	private UUID btUuid;
 
 	private State state = State.INPUT;
 	private Transaction sentTransaction;
@@ -640,12 +637,12 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 	// @TargetApi(10)
 	private void handleSendBluetooth(final Transaction tx)
 	{
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1 && bluetoothAdapter != null && btMac != null && btUuid != null)
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1 && bluetoothAdapter != null && btMac != null)
 		{
 			try
 			{
 				final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(btMac);
-				final BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(btUuid);
+				final BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(Constants.BLUETOOTH_UUID);
 
 				final byte[] serializedTx = tx.unsafeBitcoinSerialize();
 
@@ -759,7 +756,7 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 		return state == State.INPUT && validatedAddress != null && isValidAmounts;
 	}
 
-	public void update(final String receivingAddress, final String receivingLabel, final BigInteger amount, final String btMac, final UUID btUuid)
+	public void update(final String receivingAddress, final String receivingLabel, final BigInteger amount, final String btMac)
 	{
 		try
 		{
@@ -782,7 +779,8 @@ public final class SendCoinsFragment extends SherlockFragment implements AmountC
 			feeView.requestFocus();
 
 		this.btMac = btMac;
-		this.btUuid = btUuid;
+
+		System.out.println("====== btmac: " + btMac);
 
 		updateView();
 

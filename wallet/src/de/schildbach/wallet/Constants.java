@@ -18,6 +18,7 @@
 package de.schildbach.wallet;
 
 import java.math.BigInteger;
+import java.util.UUID;
 
 import android.content.Intent;
 
@@ -122,4 +123,6 @@ public class Constants
 
 	public static final long LAST_USAGE_THRESHOLD_JUST_MS = 1000 * 60 * 60 * 1;
 	public static final long LAST_USAGE_THRESHOLD_RECENTLY_MS = 1000 * 60 * 60 * 48;
+
+	public static final UUID BLUETOOTH_UUID = UUID.fromString("3357A7BB-762D-464A-8D9A-DCA592D57D5B");
 }
