@@ -18,7 +18,6 @@
 package de.schildbach.wallet.ui;
 
 import java.math.BigInteger;
-import java.util.UUID;
 
 import android.app.Dialog;
 import android.content.Intent;
@@ -164,7 +163,6 @@ public final class SendCoinsActivity extends AbstractWalletActivity
 		final String addressLabel;
 		final BigInteger amount;
 		final String btMac;
-		final UUID btUuid;
 
 		if ((Intent.ACTION_VIEW.equals(action) || NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) && intentUri != null && "bitcoin".equals(scheme))
 		{
@@ -175,7 +173,6 @@ public final class SendCoinsActivity extends AbstractWalletActivity
 				addressLabel = bitcoinUri.getLabel();
 				amount = bitcoinUri.getAmount();
 				btMac = (String) bitcoinUri.getParameterByName("btmac");
-				btUuid = UUID.fromString((String) bitcoinUri.getParameterByName("btuuid"));
 			}
 			catch (final BitcoinURIParseException x)
 			{
@@ -189,7 +186,6 @@ public final class SendCoinsActivity extends AbstractWalletActivity
 			addressLabel = intent.getStringExtra(INTENT_EXTRA_ADDRESS_LABEL);
 			amount = null;
 			btMac = null;
-			btUuid = null;
 		}
 		else
 		{
